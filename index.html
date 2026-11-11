@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FarmaLista</title>
+<meta name="theme-color" content="#0b5d5b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FarmaLista">
+<style>
+:root{--bg:#f3f7f6;--card:#fff;--tx:#12302f;--mut:#5c7573;--bd:#d5e3e0;--pri:#0b5d5b;--pri-tx:#fff;--soft:#e2f1ee;--alta:#c8352e;--media:#b7791f;--baixa:#2f855a;--warn:#fff1d6}
+:root[data-theme=dark]{--bg:#0c1a19;--card:#142625;--tx:#e4f2f0;--mut:#93b0ad;--bd:#26413f;--pri:#3cc4b4;--pri-tx:#06211f;--soft:#1b3533;--alta:#ff7b72;--media:#e5a93b;--baixa:#5fd08f;--warn:#3a2e12}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 "Avenir Next","Segoe UI",system-ui,sans-serif;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+main{max-width:760px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+header h1{font-size:1.5rem;margin:0;flex:1;letter-spacing:-.02em}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--bd);background:var(--card);border-radius:10px;padding:8px 12px}
+button:hover{border-color:var(--pri)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--pri);outline-offset:1px}
+.primary{background:var(--pri);color:var(--pri-tx);border-color:var(--pri);font-weight:600}
+.ghost{border:0;background:transparent;padding:6px 8px}
+input,select{border:1px solid var(--bd);background:var(--card);border-radius:10px;padding:9px 10px;min-width:0}
+.banner{border-radius:10px;padding:10px 12px;margin-bottom:10px;background:var(--warn);display:flex;gap:8px;align-items:center}
+.banner span{flex:1}
+[hidden]{display:none!important}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.stats b{display:block;font-size:1.5rem;line-height:1.1}
+.stats small{color:var(--mut)}
+.stats .late b{color:var(--alta)}
+.bar{height:16px;border-radius:99px;background:var(--soft);overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;width:0;background:var(--pri);border-radius:99px;transition:width .35s}
+.pct{font-size:.85rem;color:var(--mut);margin-top:4px}
+form.add{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+form.add .full{grid-column:1/-1}
+form.add label{font-size:.8rem;color:var(--mut);display:flex;flex-direction:column;gap:3px}
+.actions{display:flex;gap:8px}
+.tools{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px}
+@media(max-width:600px){.tools{grid-template-columns:1fr 1fr}.tools input{grid-column:1/-1}.stats b{font-size:1.25rem}}
+ul{list-style:none;margin:0;padding:0}
+.item{background:var(--card);border:1px solid var(--bd);border-left:6px solid var(--baixa);border-radius:14px;padding:12px;margin-bottom:10px}
+.item.p-alta{border-left-color:var(--alta)}.item.p-media{border-left-color:var(--media)}
+.item.done .nome{text-decoration:line-through;color:var(--mut)}
+.row{display:flex;gap:10px;align-items:flex-start}
+.row input[type=checkbox]{width:22px;height:22px;margin-top:2px;accent-color:var(--pri);flex:none}
+.main{flex:1;min-width:0}
+.nome{font-weight:650;word-break:break-word}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;font-size:.8rem}
+.tag{background:var(--soft);border-radius:99px;padding:2px 9px}
+.late{background:var(--alta);color:#fff;border-radius:99px;padding:2px 9px;font-weight:600}
+.today{background:var(--media);color:#fff;border-radius:99px;padding:2px 9px;font-weight:600}
+.subs{margin:8px 0 0 32px}
+.sub{display:flex;gap:8px;align-items:center;padding:2px 0;font-size:.92rem}
+.sub.done span{text-decoration:line-through;color:var(--mut)}
+.sub span{flex:1}
+.addsub{display:flex;gap:6px;margin-top:6px}
+.addsub input{flex:1;padding:6px 9px;font-size:.9rem}
+.addsub button{padding:6px 10px}
+.empty{text-align:center;color:var(--mut);padding:28px 8px}
+footer{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+footer button{font-size:.9rem}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>💊 FarmaLista</h1>
+    <button id="btnInstall" class="primary" hidden>Instalar app</button>
+    <button id="btnNotif" title="Lembretes">🔔 Ativar lembretes</button>
+    <button id="btnTheme" class="ghost" aria-label="Alternar tema claro e escuro">🌓</button>
+  </header>
+
+  <div id="offline" class="banner" hidden role="status"><span>Você está offline. O app continua funcionando e salva tudo no aparelho.</span></div>
+  <div id="iosTip" class="banner" hidden><span>No iPhone: toque em Compartilhar e depois em “Adicionar à Tela de Início” para instalar.</span><button class="ghost" id="iosClose" aria-label="Fechar dica">✕</button></div>
+
+  <section class="card" aria-label="Resumo">
+    <div class="stats">
+      <div><b id="sTotal">0</b><small>Total</small></div>
+      <div><b id="sDone">0</b><small>Comprados</small></div>
+      <div><b id="sPend">0</b><small>Pendentes</small></div>
+      <div class="late"><b id="sLate">0</b><small>Atrasados</small></div>
+    </div>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="bar"><i id="barFill"></i></div>
+    <div class="pct" id="pct">Nenhum item ainda</div>
+  </section>
+
+  <section class="card" aria-label="Novo item">
+    <form class="add" id="form" autocomplete="off">
+      <label class="full">Medicamento ou produto
+        <input id="fNome" required maxlength="80" placeholder="Ex.: Dipirona 500 mg, 20 comprimidos">
+      </label>
+      <label>Categoria
+        <select id="fCat"></select>
+      </label>
+      <label>Prioridade
+        <select id="fPrio"><option value="alta">Alta</option><option value="media" selected>Média</option><option value="baixa">Baixa</option></select>
+      </label>
+      <label>Prazo (comprar até / validade)
+        <input id="fPrazo" type="date">
+      </label>
+      <div class="actions" style="align-items:end">
+        <button class="primary" id="fSalvar" type="submit">Adicionar</button>
+        <button type="button" id="fCancel" hidden>Cancelar</button>
+        <button type="button" id="fNovaCat">+ Categoria</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card tools" aria-label="Busca e filtros">
+    <input id="qBusca" type="search" placeholder="Buscar medicamento…" aria-label="Buscar">
+    <select id="qStatus" aria-label="Filtrar por situação">
+      <option value="todos">Todos</option><option value="pend">Pendentes</option><option value="done">Comprados</option><option value="late">Atrasados</option>
+    </select>
+    <select id="qCat" aria-label="Filtrar por categoria"></select>
+    <select id="qOrd" aria-label="Ordenar">
+      <option value="criado">Mais recentes</option><option value="prazo">Prazo</option><option value="prio">Prioridade</option><option value="nome">Nome (A–Z)</option>
+    </select>
+  </section>
+
+  <ul id="lista"></ul>
+
+  <footer>
+    <button id="btnExport">⬇ Exportar backup</button>
+    <button id="btnImport">⬆ Importar backup</button>
+    <button id="btnClear">Apagar concluídos</button>
+    <input type="file" id="fileImport" accept="application/json,.json" class="sr" tabindex="-1">
+  </footer>
+</main>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const KEY = 'farmalista:v1';
+  const PESO = { alta: 0, media: 1, baixa: 2 };
+  const NOME_PRIO = { alta: 'Alta', media: 'Média', baixa: 'Baixa' };
+  const CATS = ['Analgésicos', 'Antibióticos', 'Vitaminas', 'Higiene', 'Outros'];
+  let S, editId = null;
+
+  /* ---------- dados ---------- */
+  function load() {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+    S = Object.assign({ items: [], cats: CATS.slice(), theme: null, notified: {} }, d || {});
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); }
+    catch (e) { alert('Não foi possível salvar. O armazenamento do navegador pode estar cheio ou bloqueado.'); }
+  }
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const hoje = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = d => d.split('-').reverse().join('/');
+  const atrasado = i => !i.done && i.prazo && i.prazo < hoje();
+
+  /* ---------- tema ---------- */
+  function aplicaTema() {
+    const t = S.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name=theme-color]').content = t === 'dark' ? '#0c1a19' : '#0b5d5b';
+  }
+  $('#btnTheme').onclick = () => {
+    S.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    save(); aplicaTema();
+  };
+
+  /* ---------- categorias ---------- */
+  function renderCats() {
+    const opts = S.cats.map(c => `<option>${esc(c)}</option>`).join('');
+    const atual = $('#fCat').value;
+    $('#fCat').innerHTML = opts;
+    if (S.cats.includes(atual)) $('#fCat').value = atual;
+    const f = $('#qCat').value;
+    $('#qCat').innerHTML = '<option value="">Todas as categorias</option>' + opts;
+    if (S.cats.includes(f)) $('#qCat').value = f;
+  }
+  $('#fNovaCat').onclick = () => {
+    const n = (prompt('Nome da nova categoria:') || '').trim();
+    if (!n) return;
+    if (!S.cats.some(c => c.toLowerCase() === n.toLowerCase())) S.cats.push(n);
+    save(); renderCats();
+    $('#fCat').value = S.cats.find(c => c.toLowerCase() === n.toLowerCase());
+  };
+
+  /* ---------- formulário (adicionar / editar) ---------- */
+  function resetForm() {
+    editId = null;
+    $('#form').reset();
+    $('#fSalvar').textContent = 'Adicionar';
+    $('#fCancel').hidden = true;
+  }
+  $('#fCancel').onclick = resetForm;
+  $('#form').onsubmit = e => {
+    e.preventDefault();
+    const nome = $('#fNome').value.trim();
+    if (!nome) return;
+    const dados = { nome, cat: $('#fCat').value, prio: $('#fPrio').value, prazo: $('#fPrazo').value };
+    if (editId) {
+      Object.assign(S.items.find(i => i.id === editId), dados);
+    } else {
+      S.items.unshift({ id: uid(), done: false, subs: [], criado: Date.now(), ...dados });
+    }
+    save(); resetForm(); render(); checkLembretes();
+  };
+
+  /* ---------- lista ---------- */
+  function visiveis() {
+    const q = $('#qBusca').value.trim().toLowerCase();
+    const st = $('#qStatus').value, cat = $('#qCat').value, ord = $('#qOrd').value;
+    const r = S.items.filter(i =>
+      (!q || i.nome.toLowerCase().includes(q) || i.subs.some(s => s.t.toLowerCase().includes(q))) &&
+      (!cat || i.cat === cat) &&
+      (st === 'todos' || (st === 'pend' && !i.done) || (st === 'done' && i.done) || (st === 'late' && atrasado(i))));
+    const cmp = {
+      criado: (a, b) => b.criado - a.criado,
+      prazo: (a, b) => (a.prazo || '9999').localeCompare(b.prazo || '9999'),
+      prio: (a, b) => PESO[a.prio] - PESO[b.prio],
+      nome: (a, b) => a.nome.localeCompare(b.nome, 'pt-BR')
+    }[ord];
+    return r.sort((a, b) => (a.done - b.done) || cmp(a, b));
+  }
+  function itemHtml(i) {
+    const t = hoje();
+    const badge = i.prazo
+      ? (atrasado(i) ? `<span class="late">Atrasado · ${fmt(i.prazo)}</span>`
+        : (!i.done && i.prazo === t ? '<span class="today">Vence hoje</span>' : `<span class="tag">Prazo ${fmt(i.prazo)}</span>`))
+      : '';
+    const feitos = i.subs.filter(s => s.done).length;
+    const subs = i.subs.map(s => `
+      <div class="sub ${s.done ? 'done' : ''}" data-sid="${s.id}">
+        <input type="checkbox" data-act="subtoggle" ${s.done ? 'checked' : ''} aria-label="Concluir passo">
+        <span>${esc(s.t)}</span>
+        <button class="ghost" data-act="subdel" aria-label="Apagar passo">✕</button>
+      </div>`).join('');
+    return `<li class="item p-${i.prio} ${i.done ? 'done' : ''}" data-id="${i.id}">
+      <div class="row">
+        <input type="checkbox" data-act="toggle" ${i.done ? 'checked' : ''} aria-label="Marcar como comprado">
+        <div class="main">
+          <div class="nome">${esc(i.nome)}</div>
+          <div class="meta"><span class="tag">${esc(i.cat)}</span><span class="tag">Prioridade ${NOME_PRIO[i.prio]}</span>${badge}${i.subs.length ? `<span class="tag">${feitos}/${i.subs.length} passos</span>` : ''}</div>
+        </div>
+        <button class="ghost" data-act="edit" aria-label="Editar">✏️</button>
+        <button class="ghost" data-act="del" aria-label="Apagar">🗑️</button>
+      </div>
+      <div class="subs">${subs}
+        <div class="addsub"><input data-sub placeholder="Novo passo (ex.: pedir receita)" aria-label="Novo passo"><button data-act="subadd">Adicionar</button></div>
+      </div>
+    </li>`;
+  }
+  function render() {
+    const v = visiveis();
+    $('#lista').innerHTML = v.length ? v.map(itemHtml).join('')
+      : `<li class="empty">${S.items.length ? 'Nenhum item com esses filtros.' : 'Sua lista está vazia. Adicione o primeiro medicamento acima.'}</li>`;
+    const total = S.items.length, feitos = S.items.filter(i => i.done).length;
+    const p = total ? Math.round(feitos / total * 100) : 0;
+    $('#sTotal').textContent = total; $('#sDone').textContent = feitos;
+    $('#sPend').textContent = total - feitos; $('#sLate').textContent = S.items.filter(atrasado).length;
+    $('#barFill').style.width = p + '%'; $('#bar').setAttribute('aria-valuenow', p);
+    $('#pct').textContent = total ? `${p}% concluído (${feitos} de ${total})` : 'Nenhum item ainda';
+  }
+  $('#lista').addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    const li = b.closest('.item'); const i = S.items.find(x => x.id === li.dataset.id); if (!i) return;
+    const act = b.dataset.act;
+    if (act === 'toggle') i.done = !i.done;
+    else if (act === 'del') { if (!confirm(`Apagar "${i.nome}"?`)) return; S.items = S.items.filter(x => x !== i); }
+    else if (act === 'edit') {
+      editId = i.id; $('#fNome').value = i.nome; $('#fCat').value = i.cat; $('#fPrio').value = i.prio; $('#fPrazo').value = i.prazo || '';
+      $('#fSalvar').textContent = 'Salvar alterações'; $('#fCancel').hidden = false;
+      $('#fNome').focus(); scrollTo({ top: 0, behavior: 'smooth' }); return;
+    }
+    else if (act === 'subadd') return addSub(li, i);
+    else {
+      const sid = b.closest('.sub').dataset.sid; const s = i.subs.find(x => x.id === sid);
+      if (act === 'subtoggle') s.done = !s.done; else i.subs = i.subs.filter(x => x !== s);
+    }
+    save(); render();
+  });
+  $('#lista').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.matches('[data-sub]')) {
+      e.preventDefault();
+      const li = e.target.closest('.item'); addSub(li, S.items.find(x => x.id === li.dataset.id));
+    }
+  });
+  function addSub(li, i) {
+    const t = li.querySelector('[data-sub]').value.trim(); if (!t) return;
+    i.subs.push({ id: uid(), t, done: false }); save(); render();
+  }
+  ['#qBusca', '#qStatus', '#qCat', '#qOrd'].forEach(s => $(s).addEventListener('input', render));
+  $('#btnClear').onclick = () => {
+    const n = S.items.filter(i => i.done).length;
+    if (!n) return alert('Não há itens concluídos para apagar.');
+    if (confirm(`Apagar ${n} item(ns) concluído(s)?`)) { S.items = S.items.filter(i => !i.done); save(); render(); }
+  };
+
+  /* ---------- backup ---------- */
+  $('#btnExport').onclick = () => {
+    const blob = new Blob([JSON.stringify({ app: 'farmalista', versao: 1, exportado: new Date().toISOString(), items: S.items, cats: S.cats }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = `farmalista-backup-${hoje()}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  $('#btnImport').onclick = () => $('#fileImport').click();
+  $('#fileImport').onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try {
+      const d = JSON.parse(await f.text());
+      if (!Array.isArray(d.items)) throw new Error();
+      if (!confirm(`Importar ${d.items.length} item(ns)? Isso substitui a lista atual.`)) return;
+      S.items = d.items.map(i => ({
+        id: String(i.id || uid()), nome: String(i.nome || 'Sem nome'), cat: String(i.cat || 'Outros'),
+        prio: PESO[i.prio] !== undefined ? i.prio : 'media', prazo: /^\d{4}-\d{2}-\d{2}$/.test(i.prazo || '') ? i.prazo : '',
+        done: !!i.done, criado: Number(i.criado) || Date.now(),
+        subs: Array.isArray(i.subs) ? i.subs.map(s => ({ id: String(s.id || uid()), t: String(s.t || ''), done: !!s.done })) : []
+      }));
+      const cats = new Set([...(Array.isArray(d.cats) ? d.cats : S.cats), ...S.items.map(i => i.cat)]);
+      S.cats = [...cats];
+      save(); renderCats(); render();
+    } catch (err) { alert('Arquivo inválido. Escolha um backup .json exportado por este app.'); }
+  };
+
+  /* ---------- offline ---------- */
+  function onlineStatus() { $('#offline').hidden = navigator.onLine; }
+  addEventListener('online', onlineStatus); addEventListener('offline', onlineStatus);
+
+  /* ---------- instalar ---------- */
+  let promptInstall = null;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); promptInstall = e; $('#btnInstall').hidden = false; });
+  $('#btnInstall').onclick = async () => {
+    if (!promptInstall) return;
+    promptInstall.prompt(); await promptInstall.userChoice; promptInstall = null; $('#btnInstall').hidden = true;
+  };
+  addEventListener('appinstalled', () => { $('#btnInstall').hidden = true; });
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  if (ios && !standalone && !sessionStorage.getItem('iosTipOff')) $('#iosTip').hidden = false;
+  $('#iosClose').onclick = () => { $('#iosTip').hidden = true; try { sessionStorage.setItem('iosTipOff', 1); } catch (e) {} };
+
+  /* ---------- lembretes ---------- */
+  function rotuloNotif() {
+    const b = $('#btnNotif');
+    if (!('Notification' in window)) { b.hidden = true; return; }
+    b.textContent = Notification.permission === 'granted' ? '🔔 Lembretes ativos' : Notification.permission === 'denied' ? '🔕 Lembretes bloqueados' : '🔔 Ativar lembretes';
+  }
+  $('#btnNotif').onclick = async () => {
+    if (Notification.permission === 'denied') return alert('As notificações estão bloqueadas. Libere nas configurações do navegador para este site.');
+    if (Notification.permission !== 'granted') await Notification.requestPermission();
+    rotuloNotif();
+    if (Notification.permission === 'granted') { notificar('Lembretes ativados', 'Você será avisado sobre itens que vencem hoje ou estão atrasados.', 'teste'); checkLembretes(); }
+  };
+  async function notificar(titulo, corpo, tag) {
+    const opts = { body: corpo, tag, icon: 'icon-192.png', badge: 'icon-192.png' };
+    try {
+      const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.ready : null;
+      if (reg) return reg.showNotification(titulo, opts);
+      new Notification(titulo, opts);
+    } catch (e) {}
+  }
+  function checkLembretes() {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const t = hoje();
+    Object.keys(S.notified).forEach(k => { if (!k.endsWith(':' + t)) delete S.notified[k]; });
+    S.items.filter(i => !i.done && i.prazo && i.prazo <= t).forEach(i => {
+      const k = i.id + ':' + t;
+      if (S.notified[k]) return;
+      S.notified[k] = 1;
+      notificar(i.prazo < t ? 'Item atrasado' : 'Vence hoje', `${i.nome} (prazo ${fmt(i.prazo)})`, k);
+    });
+    save();
+  }
+  setInterval(checkLembretes, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); checkLembretes(); } });
+
+  /* ---------- início ---------- */
+  load(); aplicaTema(); renderCats(); render(); onlineStatus(); rotuloNotif();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').then(checkLembretes).catch(() => {});
+})();
+</script>
+</body>
+</html>
